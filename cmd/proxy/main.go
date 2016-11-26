@@ -33,22 +33,9 @@ func startProxyServer(bind string) {
 				return r, nil
 			}
 
-			client := &http.Client{
-				Transport: &http.Transport{
-					Proxy: http.ProxyURL(p),
-				},
-			}
-			request := &http.Request{
-				URL:    r.URL,
-				Header: r.Header,
-				Body:   r.Body,
-			}
-			log.Printf("request %s using %s", r.URL, p)
-			resp, err := client.Do(request)
-			if err != nil {
-				log.Printf("proxy %s request failed: %s", p, err)
-			}
-			return r, resp
+			proxy.Tr = &http.Transport{Proxy: http.ProxyURL(p)}
+
+			return r, nil
 		},
 	)
 
