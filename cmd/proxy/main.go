@@ -38,10 +38,15 @@ func startProxyServer(bind string) {
 					Proxy: http.ProxyURL(p),
 				},
 			}
-			log.Printf("request using %s", p)
-			resp, err := client.Do(r)
+			request := &http.Request{
+				URL:    r.URL,
+				Header: r.Header,
+				Body:   r.Body,
+			}
+			log.Printf("request %s using %s", r.URL, p)
+			resp, err := client.Do(request)
 			if err != nil {
-				log.Printf("proxy %s request failed", p)
+				log.Printf("proxy %s request failed: %s", p, err)
 			}
 			return r, resp
 		},
