@@ -1,6 +1,7 @@
 package proxy_list
 
 import (
+	"errors"
 	"net/http"
 	"net/url"
 	"time"
@@ -8,7 +9,11 @@ import (
 
 const validateUrl = "http://httpbin.org/ip"
 
-var validateTimeout = time.Duration(10 * time.Second)
+var (
+	validateTimeout = time.Duration(10 * time.Second)
+
+	errInvalidProxy = errors.New("invalid proxy")
+)
 
 // ValidateHTTP validates a http proxy.
 func ValidateHTTP(proxy *url.URL) (bool, error) {
@@ -26,6 +31,14 @@ func ValidateHTTP(proxy *url.URL) (bool, error) {
 		Timeout: validateTimeout,
 	}
 
-	_, err := client.Get(validateUrl)
-	return err == nil, err
+	resp, err := client.Get(validateUrl)
+	if err != nil {
+		return false, err
+	}
+
+	if resp.StatusCode != 200 {
+		return false, errInvalidProxy
+	}
+
+	return true, nil
 }
