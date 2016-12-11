@@ -1,34 +1,46 @@
 package xicidaili
 
 import (
-	"bufio"
+	"fmt"
 	"net/http"
 	"net/url"
+
+	"github.com/PuerkitoBio/goquery"
 )
 
-const proxiesListUrl = "http://api.xicidaili.com/free2016.txt"
+const proxiesListUrl = "http://www.xicidaili.com"
 
 // GetProxies returns list of proxy ip from xicidaili.com .
 func GetProxies() []*url.URL {
-	resp, err := http.Get(proxiesListUrl)
+	req, err := http.NewRequest("GET", proxiesListUrl, nil)
+	if err != nil {
+		return nil
+	}
+	req.Header.Set("User-Agent", "curl/7.49.1")
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil
 	}
 
-	if resp.StatusCode != 200 {
+	doc, err := goquery.NewDocumentFromResponse(resp)
+	if err != nil {
 		return nil
 	}
 
-	scanner := bufio.NewScanner(resp.Body)
-	defer resp.Body.Close()
-
 	var proxies []*url.URL
-	for scanner.Scan() {
-		proxyUrl, err := url.Parse(scanner.Text())
-		if err == nil {
-			proxies = append(proxies, proxyUrl)
+
+	doc.Find("#ip_list tr").Each(func(_ int, s *goquery.Selection) {
+		ip := s.Find("td:nth-child(2)").Text()
+		port := s.Find("td:nth-child(3)").Text()
+		if ip == "" || port == "" {
+			return
 		}
-	}
+
+		if u, err := url.Parse(fmt.Sprintf("%s:%s", ip, port)); err == nil {
+			proxies = append(proxies, u)
+		}
+
+	})
 
 	return proxies
 }
